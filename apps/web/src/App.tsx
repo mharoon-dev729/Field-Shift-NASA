@@ -6,15 +6,19 @@ import { ApiError } from "./api/client.js";
 import { ComparisonSection } from "./components/ComparisonSection.js";
 import { EvidenceSection } from "./components/EvidenceSection.js";
 import { FarmForm } from "./components/FarmForm.js";
+import { HistorySection } from "./components/HistorySection.js";
 import { SourcesPanel } from "./components/SourcesPanel.js";
 import { Alert } from "./components/ui.js";
 import { buildCompareRequest, DEFAULT_PROFILE, type FarmProfileInput, type ProfileErrors } from "./lib/profile.js";
+import { useReducedMotion } from "./hooks/useReducedMotion.js";
+import { deleteHistory, loadHistory, saveHistory, type AnalysisHistoryEntry } from "./lib/history.js";
 
 function messageOf(err: unknown): string {
   return err instanceof ApiError ? err.message : err instanceof Error ? err.message : "Unknown error.";
 }
 
 export default function App() {
+  const reducedMotion = useReducedMotion();
   const [profile, setProfile] = useState<FarmProfileInput>(DEFAULT_PROFILE);
   const [fieldErrors, setFieldErrors] = useState<ProfileErrors>({});
   const [catalogue, setCatalogue] = useState<CropsResponse | null>(null);
@@ -22,6 +26,9 @@ export default function App() {
   const [sources, setSources] = useState<SourcesResponse | null>(null);
   const [sourcesError, setSourcesError] = useState<string | null>(null);
   const [sourcesOpen, setSourcesOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const [history, setHistory] = useState<AnalysisHistoryEntry[]>(() => loadHistory());
 
   const [evidence, setEvidence] = useState<EvidenceResponse | null>(null);
   const [evidenceError, setEvidenceError] = useState<string | null>(null);
@@ -36,6 +43,7 @@ export default function App() {
   const sequence = useRef(0);
   const lastRequest = useRef<ReturnType<typeof buildCompareRequest>["request"]>(null);
   const resultsRef = useRef<HTMLHeadingElement | null>(null);
+  const savedRunRef = useRef<string | null>(null);
 
   const loadCatalogue = useCallback(async () => {
     setCatalogueError(null);
@@ -71,6 +79,23 @@ export default function App() {
     return () => controller.abort();
     // Catalogue is refreshed deliberately when the planning year changes.
   }, []);
+
+  useEffect(() => {
+    const onScroll = () => {
+      const active = window.scrollY > 24;
+      setScrolled(active);
+      setShowScrollTop(window.scrollY > 520);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    if (!comparison || !evidence || pending || comparisonError || evidenceError || savedRunRef.current === comparison.runId) return;
+    savedRunRef.current = comparison.runId;
+    setHistory(saveHistory({ id: comparison.runId, savedAt: new Date().toISOString(), profile, evidence, comparison }));
+  }, [comparison, evidence, pending, comparisonError, evidenceError, profile]);
 
   const updateProfile = useCallback((patch: Partial<FarmProfileInput>) => {
     setProfile((current) => ({ ...current, ...patch }));
@@ -168,37 +193,52 @@ export default function App() {
         Skip to the farm form
       </a>
       <main className="page">
-        <header className="masthead">
-          <div>
-            <p className="eyebrow">NASA Space Apps Challenge 2026 · independent entry</p>
-            <h1>Field Shift</h1>
-            <p className="lede">
-              Compare crop rotations for a farm in {PILOT.name}, {PILOT.province}, using real NASA Earth
-              observations and cited local agronomy — with the evidence, the risks and the gaps shown openly.
-            </p>
+        <header className="masthead" aria-label="Agri main header">
+          <div className={`topbar${scrolled ? " topbar-scrolled" : ""}`}>
+            <div className="brand"><span className="brand-mark" aria-hidden="true">◒</span>Agri</div>
+            <nav className="main-nav" aria-label="Main navigation">
+              <a href="#home">Home</a><a href="#profile-heading">Farm setup</a><a href="#results">Results</a><a href="#history">Analysis history</a>
+              <a href="#evidence">Evidence</a>
+            </nav>
+            <button type="button" className="button secondary" onClick={() => setSourcesOpen(true)}>Sources & assumptions</button>
           </div>
-          <button type="button" className="button secondary" onClick={() => setSourcesOpen(true)}>
-            Sources &amp; assumptions
-          </button>
+          <div className="hero-copy" id="home">
+            <p className="eyebrow">NASA Earth observations · local agronomy</p>
+            <h1>Field Shift: better crop decisions for a stronger tomorrow.</h1>
+            <p className="lede">Agri brings satellite-informed climate evidence and documented local rotations together, so farmers can weigh each season with confidence.</p>
+            <div className="hero-actions">
+              <a className="button button-primary" href="#profile-heading">Start farm analysis →</a>
+              <a className="button button-secondary" href="#how-it-works">How it works</a>
+            </div>
+          </div>
+          <div className="hero-facts" aria-label="Agri capabilities">
+            <div><strong>NASA data</strong>Environmental evidence, clearly labelled</div>
+            <div><strong>Crop rotations</strong>Documented local options</div>
+            <div><strong>Farmer-first</strong>Simple explanations, honest limits</div>
+          </div>
         </header>
 
-        <section className="intro" aria-labelledby="intro-heading">
-          <h2 id="intro-heading">Why this exists</h2>
+        <section className="intro" aria-labelledby="intro-heading" id="how-it-works">
+          <h2 id="intro-heading">Why this exists — and how it works</h2>
           <div className="intro-grid">
-            <p>
-              A farmer commits to next season&apos;s crop months in advance. Rainfall timing, heat during the
-              growing window and frost at the edges of the season all shape how a rotation behaves — and those
-              conditions are shifting.
-            </p>
-            <p>
-              Field Shift pulls <strong>NASA POWER</strong> reanalysis for the area around the farm, lines it up
-              with each candidate rotation&apos;s documented window, and shows which factors favour or work
-              against each option.
-            </p>
-            <p>
-              It is decision support, not a forecast of success. It will not promise higher yield or better soil,
-              and when the evidence is too thin it says so instead of ranking.
-            </p>
+            <p>Start with your farm and season. Agri keeps the science visible but never makes a claim the data cannot support.</p>
+            <ol className="how-steps">
+              <li>
+                <strong>Tell us where</strong> your farm is — by current location, map, or area name.
+              </li>
+              <li>
+                <strong>Choose a season</strong> — kharif (April–November) or rabi (November–May).
+              </li>
+              <li>
+                <strong>Select rotations</strong> — compare your current practice against eligible options.
+              </li>
+              <li>
+                <strong>Set priorities</strong> — tell Agri what matters most: water, soil health, or climate resilience.
+              </li>
+              <li>
+                <strong>Get results</strong> — Agri scores each rotation and explains why, with confidence and gaps.
+              </li>
+            </ol>
           </div>
         </section>
 
@@ -249,6 +289,24 @@ export default function App() {
           }}
         />
 
+        <HistorySection
+          entries={history}
+          onOpen={(entry) => {
+            savedRunRef.current = entry.comparison.runId;
+            setProfile(entry.profile);
+            setEvidence(entry.evidence);
+            setComparison(entry.comparison);
+            setEvidenceError(null);
+            setComparisonError(null);
+            window.setTimeout(() => resultsRef.current?.focus(), 0);
+          }}
+          onDelete={(entry) => {
+            const description = `${entry.profile.season === "kharif" ? "Kharif" : "Rabi"} ${entry.profile.planningYear} analysis from ${new Date(entry.savedAt).toLocaleString()}`;
+            if (!window.confirm(`Delete this saved ${description}? This only removes it from this browser.`)) return;
+            setHistory(deleteHistory(entry.id));
+          }}
+        />
+
         <footer className="footer">
           <p>
             Independent project. Not affiliated with, endorsed by, or produced by NASA or NASA Space Apps. NASA
@@ -268,6 +326,7 @@ export default function App() {
         sources={sources}
         error={sourcesError}
       />
+      {showScrollTop ? <button type="button" className="scroll-top" aria-label="Scroll to top" onClick={() => window.scrollTo({ top: 0, behavior: reducedMotion ? "auto" : "smooth" })}>↑</button> : null}
     </>
   );
 }

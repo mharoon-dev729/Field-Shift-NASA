@@ -1,4 +1,5 @@
 import { PILOT, type CropCatalogueEntry, type RotationCatalogueEntry } from "@fieldshift/shared";
+import { useState } from "react";
 
 import type { FarmProfileInput, ProfileErrors, SeasonValue } from "../lib/profile.js";
 import { Field } from "./ui.js";
@@ -20,6 +21,8 @@ const PRIORITY_LABELS: Array<{ key: keyof FarmProfileInput["priorities"]; label:
   { key: "climateResilience", label: "Climate resilience", hint: "Weight heat exposure and frost risk" },
 ];
 
+interface PlaceResult { display_name: string; lat: string; lon: string; }
+
 export function FarmForm({
   profile,
   errors,
@@ -30,6 +33,11 @@ export function FarmForm({
   onChange,
   onSubmit,
 }: Props) {
+  const [locationState, setLocationState] = useState<"idle" | "locating" | "selected" | "denied" | "unavailable">("idle");
+  const [locationQuery, setLocationQuery] = useState("");
+  const [placeResults, setPlaceResults] = useState<PlaceResult[]>([]);
+  const [placeError, setPlaceError] = useState<string | null>(null);
+  const [searching, setSearching] = useState(false);
   const prioritySum =
     profile.priorities.water + profile.priorities.soilHealth + profile.priorities.climateResilience;
 
@@ -41,17 +49,54 @@ export function FarmForm({
     onChange({ candidateRotationIds: next });
   }
 
+  function useCurrentLocation() {
+    if (!navigator.geolocation) {
+      setLocationState("unavailable");
+      return;
+    }
+    setLocationState("locating");
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        onChange({ lat: coords.latitude.toFixed(5), lon: coords.longitude.toFixed(5) });
+        setLocationState("selected");
+      },
+      (error) => setLocationState(error.code === error.PERMISSION_DENIED ? "denied" : "unavailable"),
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
+  }
+
+  async function searchFarmLocation(event: React.FormEvent) {
+    event.preventDefault();
+    const query = locationQuery.trim();
+    if (!query) return;
+    setSearching(true);
+    setPlaceError(null);
+    try {
+      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&countrycodes=pk&q=${encodeURIComponent(query)}`, { headers: { Accept: "application/json" } });
+      if (!response.ok) throw new Error("Search service unavailable");
+      const results: unknown = await response.json();
+      setPlaceResults(Array.isArray(results) ? results.filter((item): item is PlaceResult => typeof item === "object" && item !== null && "display_name" in item && "lat" in item && "lon" in item) : []);
+    } catch {
+      setPlaceError("We could not search places right now. Try again or choose your location on the map.");
+    } finally { setSearching(false); }
+  }
+
+  function selectPlace(place: PlaceResult) {
+    onChange({ lat: Number(place.lat).toFixed(5), lon: Number(place.lon).toFixed(5) });
+    setLocationQuery(place.display_name.split(",").slice(0, 2).join(","));
+    setPlaceResults([]);
+    setLocationState("selected");
+  }
+
   return (
-    <section className="card" aria-labelledby="profile-heading">
-      <div className="card-head">
-        <h2 id="profile-heading">Your farm</h2>
-        <p className="muted">
-          Everything except location, season and priorities is optional. Blank fields stay blank — the
-          engine treats unknown soil as unknown, never as an average.
-        </p>
+    <section className="card farm-journey" aria-labelledby="profile-heading">
+      <div className="journey-head">
+        <div><h2 id="profile-heading">Set up your farm</h2><p className="muted">A guided profile for an evidence-based comparison.</p></div>
+        <div className="stepper" aria-label="Five farm setup stages"><span className="active" /><span className="active" /><span className="active" /><span className="active" /><span className="active" /></div>
       </div>
 
       <form
+        className="farm-form"
         onSubmit={(event) => {
           event.preventDefault();
           onSubmit();
@@ -59,44 +104,34 @@ export function FarmForm({
         noValidate
       >
         <fieldset>
-          <legend>Location</legend>
-          <div className="field-row">
-            <Field id="lat" label="Latitude (decimal degrees)" error={errors["lat"]}>
-              <input
-                id="lat"
-                name="lat"
-                inputMode="decimal"
-                value={profile.lat}
-                aria-describedby={errors["lat"] ? "lat-error" : undefined}
-                onChange={(e) => onChange({ lat: e.target.value })}
-              />
-            </Field>
-            <Field id="lon" label="Longitude (decimal degrees)" error={errors["lon"]}>
-              <input
-                id="lon"
-                name="lon"
-                inputMode="decimal"
-                value={profile.lon}
-                aria-describedby={errors["lon"] ? "lon-error" : undefined}
-                onChange={(e) => onChange({ lon: e.target.value })}
-              />
-            </Field>
+          <legend>1. Farm location</legend>
+          <div className="location-card">
+            <h3>Faisalabad, Punjab</h3>
+            <p>Select your farm location to ground the analysis in local conditions. Your precise coordinates stay private and are used only to request the analysis.</p>
+            {locationState === "selected" ? <p className="location-status">✓ Location selected</p> : null}
+            {locationState === "locating" ? <p className="location-status">Finding your location…</p> : null}
+            {locationState === "denied" ? <p className="location-status">Location access was declined. You can continue with the pilot area.</p> : null}
+            {locationState === "unavailable" ? <p className="location-status">We could not determine a location on this device. You can continue with the pilot area.</p> : null}
+            <div className="location-actions">
+              <button type="button" className="button button-primary" disabled={locationState === "locating"} onClick={useCurrentLocation}>{locationState === "locating" ? "Finding location…" : "Use my current location"}</button>
+              <button type="button" className="button button-secondary" onClick={() => { onChange({ lat: String(PILOT.anchor.lat), lon: String(PILOT.anchor.lon) }); setLocationState("selected"); }}>Use Faisalabad pilot area</button>
+            </div>
           </div>
-          <p className="field-hint">
-            Pilot area: {PILOT.name}, {PILOT.province} ({PILOT.bbox.south}–{PILOT.bbox.north} N,{" "}
-            {PILOT.bbox.west}–{PILOT.bbox.east} E).{" "}
-            <button
-              type="button"
-              className="link-button"
-              onClick={() => onChange({ lat: String(PILOT.anchor.lat), lon: String(PILOT.anchor.lon) })}
-            >
-              Use the pilot centre ({PILOT.anchor.lat.toFixed(4)}, {PILOT.anchor.lon.toFixed(4)})
-            </button>
-          </p>
+          <div className="location-methods">
+            <form className="location-search" onSubmit={searchFarmLocation}>
+              <label htmlFor="farm-location-search">Search for my farm location</label>
+              <div><input id="farm-location-search" value={locationQuery} onChange={(event) => setLocationQuery(event.target.value)} placeholder="City, district, town, or village" /><button className="button button-secondary" type="submit" disabled={searching}>{searching ? "Searching…" : "Search"}</button></div>
+              <p className="field-hint">Search results are supplied by OpenStreetMap. The selected point is used for NASA data; it is not a field measurement.</p>
+            </form>
+            {placeError ? <p className="field-error" role="alert">{placeError}</p> : null}
+            {placeResults.length > 0 ? <ul className="place-results">{placeResults.map((place) => <li key={`${place.lat}-${place.lon}`}><button type="button" onClick={() => selectPlace(place)}>{place.display_name}</button></li>)}</ul> : null}
+            <details className="map-selector"><summary>Select on map</summary><p>Choose an approximate farm point within Pakistan. NASA data is gridded, so it represents the surrounding area rather than a field-level measurement.</p><div className="map-grid" role="application" aria-label="Pakistan map selector" onClick={(event) => { const rect = event.currentTarget.getBoundingClientRect(); const lon = 60 + ((event.clientX - rect.left) / rect.width) * 20; const lat = 37 - ((event.clientY - rect.top) / rect.height) * 14; onChange({ lat: lat.toFixed(5), lon: lon.toFixed(5) }); setLocationState("selected"); }}><span aria-hidden="true">+</span></div></details>
+          </div>
+          {errors["lat"] || errors["lon"] ? <p className="field-error" role="alert">{errors["lat"] ?? errors["lon"]}</p> : null}
         </fieldset>
 
         <fieldset>
-          <legend>Season and year</legend>
+          <legend>2. Growing season and analysis year</legend>
           <div className="field-row">
             <Field id="season" label="Planning season" hint="Rabi runs Nov–May; kharif runs Apr–Nov.">
               <select
@@ -127,7 +162,7 @@ export function FarmForm({
         </fieldset>
 
         <fieldset>
-          <legend>Current practice</legend>
+          <legend>3. Current practice and crop rotations</legend>
           {catalogueError ? (
             <p className="field-error" role="alert">
               {catalogueError}
@@ -205,7 +240,7 @@ export function FarmForm({
         </fieldset>
 
         <fieldset>
-          <legend>Irrigation (optional context)</legend>
+          <legend>4. Farm context</legend>
           <Field id="irrigation" label="Water source">
             <select
               id="irrigation"
@@ -221,6 +256,8 @@ export function FarmForm({
           </Field>
         </fieldset>
 
+        <details className="advanced-location soil-details">
+          <summary>Additional soil details (optional)</summary>
         <fieldset>
           <legend>Soil (leave blank if unknown)</legend>
           <p className="field-hint">
@@ -268,9 +305,10 @@ export function FarmForm({
             />
           </Field>
         </fieldset>
+        </details>
 
         <fieldset>
-          <legend>Your priorities</legend>
+          <legend>5. Your priorities</legend>
           <p className="field-hint">
             Weights are relative; the API normalises them. They re-weight the comparison, they cannot create
             evidence that does not exist.
@@ -310,12 +348,12 @@ export function FarmForm({
 
         <div className="actions">
           <button type="submit" className="button" disabled={pending || rotations.length === 0}>
-            {pending ? "Retrieving evidence…" : "Retrieve evidence and compare rotations"}
+            {pending ? "Analyzing your farm…" : "Analyze my farm"}
           </button>
           <p className="muted small" role="status" aria-live="polite">
             {pending
-              ? "Fetching NASA POWER evidence and running the deterministic comparison. This can take a few seconds."
-              : "Evidence is retrieved live from the API; nothing is pre-computed."}
+              ? "Retrieving NASA weather evidence and comparing your rotations. This can take a few seconds."
+              : "Agri uses live evidence. It never fills data gaps with estimates."}
           </p>
         </div>
       </form>

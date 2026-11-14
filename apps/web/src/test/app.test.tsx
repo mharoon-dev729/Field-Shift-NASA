@@ -328,32 +328,31 @@ beforeEach(() => {
 });
 
 async function submit(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole("button", { name: /retrieve evidence and compare rotations/i }));
+  await user.click(screen.getByRole("button", { name: /analyze my farm/i }));
 }
 
 describe("Field Shift application", () => {
-  it("renders the introduction and a form prefilled with the pilot location", async () => {
+  it("renders a farmer-friendly location flow without coordinate fields", async () => {
     render(<App />);
 
     expect(await screen.findByRole("heading", { name: /field shift/i, level: 1 })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /why this exists/i })).toBeInTheDocument();
-    expect(screen.getByLabelText(/latitude/i)).toHaveValue("31.4187");
-    expect(screen.getByLabelText(/longitude/i)).toHaveValue("73.0791");
+    expect(screen.getByRole("button", { name: /use my current location/i })).toBeInTheDocument();
+    expect(screen.queryByLabelText(/latitude/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/longitude/i)).not.toBeInTheDocument();
     expect(screen.getByLabelText(/rotation you use now/i)).toBeInTheDocument();
   });
 
-  it("blocks submission and calls no API when the location is outside the pilot area", async () => {
+  it("lets farmers use the documented pilot-area fallback", async () => {
     const user = userEvent.setup();
     render(<App />);
     await screen.findByRole("combobox", { name: /rotation you use now/i });
 
-    await user.clear(screen.getByLabelText(/latitude/i));
-    await user.type(screen.getByLabelText(/latitude/i), "24.86");
+    await user.click(screen.getByRole("button", { name: /use faisalabad pilot area/i }));
     await submit(user);
 
-    expect(await screen.findByText(/pilot area spans/i)).toBeInTheDocument();
-    expect(mocked.compareRotations).not.toHaveBeenCalled();
-    expect(mocked.getEvidence).not.toHaveBeenCalled();
+    expect(await screen.findByRole("heading", { name: /environmental evidence/i })).toBeInTheDocument();
+    expect(mocked.compareRotations).toHaveBeenCalled();
   });
 
   it("shows evidence, comparison indices and provenance after a successful run", async () => {
@@ -449,13 +448,11 @@ describe("Field Shift application", () => {
     render(<App />);
     await screen.findByRole("combobox", { name: /rotation you use now/i });
 
-    await user.clear(screen.getByLabelText(/latitude/i));
-    await user.type(screen.getByLabelText(/latitude/i), "31.5");
     await submit(user);
 
     expect(await screen.findByText(/the comparison could not be completed/i)).toBeInTheDocument();
     expect(screen.getByText(/NASA POWER did not respond within 20 s/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/latitude/i)).toHaveValue("31.5");
+    expect(screen.getByRole("button", { name: /use my current location/i })).toBeInTheDocument();
     expect(screen.queryByText("87.1")).not.toBeInTheDocument();
 
     mocked.compareRotations.mockResolvedValueOnce(result());
@@ -485,15 +482,15 @@ describe("Field Shift application", () => {
 
     await submit(user);
 
-    const button = screen.getByRole("button", { name: /retrieving evidence/i });
+    const button = screen.getByRole("button", { name: /analyzing your farm/i });
     expect(button).toBeDisabled();
 
     release(result());
-    expect(screen.getByRole("button", { name: /retrieving evidence/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /analyzing your farm/i })).toBeDisabled();
 
     releaseEvidence(evidence());
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /retrieve evidence and compare rotations/i })).toBeEnabled();
+      expect(screen.getByRole("button", { name: /analyze my farm/i })).toBeEnabled();
     });
   });
 

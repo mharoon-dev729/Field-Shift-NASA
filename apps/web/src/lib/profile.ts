@@ -63,13 +63,7 @@ export function buildCompareRequest(profile: FarmProfileInput): BuildResult {
   const lat = Number(profile.lat);
   const lon = Number(profile.lon);
   if (profile.lat.trim() === "" || !Number.isFinite(lat)) errors["lat"] = "Enter a latitude in decimal degrees.";
-  else if (lat < PILOT.bbox.south || lat > PILOT.bbox.north) {
-    errors["lat"] = `The pilot area spans ${PILOT.bbox.south}–${PILOT.bbox.north} N.`;
-  }
   if (profile.lon.trim() === "" || !Number.isFinite(lon)) errors["lon"] = "Enter a longitude in decimal degrees.";
-  else if (lon < PILOT.bbox.west || lon > PILOT.bbox.east) {
-    errors["lon"] = `The pilot area spans ${PILOT.bbox.west}–${PILOT.bbox.east} E.`;
-  }
 
   const year = Number(profile.planningYear);
   if (!Number.isInteger(year) || year < 1980 || year > new Date().getUTCFullYear() + 1) {

@@ -45,13 +45,24 @@ export function ScenarioCard({ scenario, position }: { scenario: ScenarioResult;
 
       <p className="small muted">{scenario.whyIncluded}</p>
 
-      <ul className="criterion-list">
-        {scenario.components.map((criterion) => (
-          <CriterionRow key={criterion.id} criterion={criterion} />
-        ))}
-      </ul>
+      {scenario.explanation.supporting.length > 0 || scenario.explanation.risks.length > 0 ? (
+        <section className="scenario-insights" aria-label={`${scenario.label} key insights`}>
+          <h4>What stands out</h4>
+          <ul className="bullets">
+            {[...scenario.explanation.supporting, ...scenario.explanation.risks].slice(0, 3).map((item) => <li key={item}>{item}</li>)}
+          </ul>
+        </section>
+      ) : null}
 
-      <div className="explanation">
+      <details className="scenario-details">
+        <summary>View evaluation details</summary>
+        <ul className="criterion-list">
+          {scenario.components.map((criterion) => (
+            <CriterionRow key={criterion.id} criterion={criterion} />
+          ))}
+        </ul>
+
+        <div className="explanation">
         {scenario.explanation.supporting.length > 0 ? (
           <section>
             <h4>Supporting evidence</h4>
@@ -93,7 +104,8 @@ export function ScenarioCard({ scenario, position }: { scenario: ScenarioResult;
             ))}
           </ul>
         </section>
-      </div>
+        </div>
+      </details>
     </article>
   );
 }

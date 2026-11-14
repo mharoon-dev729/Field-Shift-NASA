@@ -14,8 +14,6 @@
  */
 
 import {
-  isInsidePilot,
-  PILOT,
   type EvidenceObservation,
   type EvidenceQuery,
   type EvidenceResponse,
@@ -406,19 +404,6 @@ export function createEvidenceService(deps: EvidenceDeps = {}) {
   return async function getEvidence(query: EvidenceQuery): Promise<EvidenceResponse> {
     const now = nowFn();
 
-    if (!isInsidePilot(query.lat, query.lon)) {
-      throw new AppError("OUT_OF_COVERAGE", "This location is outside the Faisalabad pilot area", {
-        details: {
-          requested: { lat: query.lat, lon: query.lon },
-          pilotBbox: PILOT.bbox,
-          nearestValidPoint: {
-            lat: clamp(query.lat, PILOT.bbox.south, PILOT.bbox.north),
-            lon: clamp(query.lon, PILOT.bbox.west, PILOT.bbox.east),
-          },
-        },
-      });
-    }
-
     const seasonWindow = resolveSeasonWindow(query.season, query.year);
     const clamped = clampToAvailable(seasonWindow, now);
     if (clamped.start > clamped.end) {
@@ -522,10 +507,6 @@ export function createEvidenceService(deps: EvidenceDeps = {}) {
       limitations,
     };
   };
-}
-
-function clamp(v: number, min: number, max: number): number {
-  return Math.min(Math.max(v, min), max);
 }
 
 function baseSource(src: typeof POWER_SOURCE | typeof SOILGRIDS_SOURCE) {

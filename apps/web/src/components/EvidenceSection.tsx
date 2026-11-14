@@ -16,6 +16,26 @@ function sourceTone(status: SourceStatus["status"]): "good" | "warning" | "bad" 
   return "bad";
 }
 
+const FRIENDLY_VARIABLES: Record<string, { label: string; note: string }> = {
+  meanT2M: { label: "Average air temperature", note: "The typical temperature during the selected period." },
+  seasonRainMm: { label: "Season rainfall", note: "The total rainfall measured across the selected season." },
+  meanGwetroot: { label: "Root-zone soil wetness", note: "A modelled estimate of moisture around crop-root depth." },
+  minGwetroot: { label: "Lowest root-zone soil wetness", note: "The driest modelled root-zone condition during the period." },
+  T2M: { label: "Average air temperature", note: "The typical temperature during the selected period." },
+  T2M_MAX: { label: "Highest daily temperature", note: "The hottest temperature recorded on a day in the selected period." },
+  T2M_MIN: { label: "Lowest daily temperature", note: "The coolest temperature recorded on a day in the selected period." },
+  PRECTOTCORR: { label: "Daily rainfall", note: "How much rain fell during the selected period." },
+  GWETROOT: { label: "Root-zone soil wetness", note: "A modelled estimate of moisture around crop-root depth." },
+  GWETPROF: { label: "Profile soil wetness", note: "A modelled estimate of moisture through the soil profile." },
+  RH2M: { label: "Relative humidity", note: "How much moisture was in the air near the ground." },
+  ALLSKY_SFC_SW_DWN: { label: "Solar energy reaching the ground", note: "The sunlight energy available at the surface." },
+  WS2M: { label: "Wind speed", note: "Average wind speed near the ground." },
+};
+
+function friendly(variable: string, fallback: string) {
+  return FRIENDLY_VARIABLES[variable] ?? { label: fallback, note: "Environmental evidence for the selected period." };
+}
+
 export function EvidenceSection({ evidence, loading, error, onRetry }: Props) {
   return (
     <section className="card" aria-labelledby="evidence-heading" id="evidence">
@@ -99,7 +119,7 @@ export function EvidenceSection({ evidence, loading, error, onRetry }: Props) {
             <ul className="stat-grid">
               {evidence.indicators.map((indicator) => (
                 <li key={indicator.id} className="stat">
-                  <span className="stat-label">{indicator.label}</span>
+                  <span className="stat-label">{friendly(indicator.id, indicator.label).label}</span>
                   <span className="stat-value">
                     {indicator.value === null ? NOT_AVAILABLE : formatNumber(indicator.value, 2)}
                     {indicator.value !== null ? <span className="stat-unit"> {formatUnit(indicator.unit)}</span> : null}
@@ -107,7 +127,7 @@ export function EvidenceSection({ evidence, loading, error, onRetry }: Props) {
                   <span className="small muted">
                     {formatWindow(indicator.windowStart, indicator.windowEnd)} · {indicator.sourceId}
                   </span>
-                  {indicator.note ? <span className="small muted">{indicator.note}</span> : null}
+                  <span className="small muted">{indicator.note ?? friendly(indicator.id, indicator.label).note}</span>
                 </li>
               ))}
             </ul>
@@ -122,7 +142,7 @@ export function EvidenceSection({ evidence, loading, error, onRetry }: Props) {
               <Sparkline
                 key={series.variable}
                 points={series.points}
-                label={`${series.label} (${series.variable})`}
+                label={friendly(series.variable, series.label).label}
                 unit={formatUnit(series.unit)}
               />
             ))}
@@ -148,7 +168,7 @@ export function EvidenceSection({ evidence, loading, error, onRetry }: Props) {
               <tbody>
                 {evidence.observations.map((observation) => (
                   <tr key={`${observation.variable}-${observation.aggregation}`}>
-                    <th scope="row">{observation.variable}</th>
+                    <th scope="row"><span>{friendly(observation.variable, observation.label).label}</span><span className="small muted"> · {observation.variable}</span></th>
                     <td>{observation.value === null ? NOT_AVAILABLE : formatNumber(observation.value, 2)}</td>
                     <td>{formatUnit(observation.unit)}</td>
                     <td>
