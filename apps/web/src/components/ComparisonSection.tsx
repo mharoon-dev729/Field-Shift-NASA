@@ -21,7 +21,7 @@ function orderedScenarios(result: EngineResult): ScenarioResult[] {
 export function ComparisonSection({ result, loading, error, onRetry }: Props) {
   const recommendedId = result && result.status !== "insufficient_evidence" && result.ranking.length > 0 && result.pairwise.some((pair) => pair.meaningful && pair.a === result.ranking[0]) ? result.ranking[0] : null;
   return (
-    <section className="card" aria-labelledby="comparison-heading" id="comparison">
+    <section className="card comparison-card" aria-labelledby="comparison-heading" id="comparison">
       <div className="card-head">
         <h2 id="comparison-heading">Rotation comparison</h2>
         <p className="muted">

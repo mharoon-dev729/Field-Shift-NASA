@@ -55,7 +55,7 @@ function rainfallBars(evidence: EvidenceResponse): number[] {
 
 export function EvidenceSection({ evidence, loading, error, onRetry }: Props) {
   return (
-    <section className="card" aria-labelledby="evidence-heading" id="evidence">
+    <section className="card evidence-card" aria-labelledby="evidence-heading" id="evidence">
       <div className="card-head">
         <h2 id="evidence-heading">Environmental evidence</h2>
         <p className="muted">

@@ -219,24 +219,28 @@ export default function App() {
         </header>
 
         <section className="intro" aria-labelledby="intro-heading" id="how-it-works">
-          <h2 id="intro-heading">Why this exists — and how it works</h2>
           <div className="intro-grid">
-            <p>Start with your farm and season. Agri keeps the science visible but never makes a claim the data cannot support.</p>
+            <div className="intro-copy">
+              <p className="intro-kicker">Your guided farm analysis</p>
+              <h2 id="intro-heading">Why this exists — and how it works</h2>
+              <p>Start with your farm and season. Agri keeps the science visible, explains its reasoning, and never makes a claim the data cannot support.</p>
+              <span className="intro-promise">Five straightforward steps · evidence stays visible</span>
+            </div>
             <ol className="how-steps">
               <li>
-                <strong>Tell us where</strong> your farm is — by current location, map, or area name.
+                <strong>Tell us where</strong><span>Choose your farm area to ground the analysis in local conditions.</span>
               </li>
               <li>
-                <strong>Choose a season</strong> — kharif (April–November) or rabi (November–May).
+                <strong>Choose a season</strong><span>Select kharif (April–November) or rabi (November–May).</span>
               </li>
               <li>
-                <strong>Select rotations</strong> — compare your current practice against eligible options.
+                <strong>Select rotations</strong><span>Compare your current practice against eligible local options.</span>
               </li>
               <li>
-                <strong>Set priorities</strong> — tell Agri what matters most: water, soil health, or climate resilience.
+                <strong>Set priorities</strong><span>Balance what matters most: water, soil health, or resilience.</span>
               </li>
               <li>
-                <strong>Get results</strong> — Agri scores each rotation and explains why, with confidence and gaps.
+                <strong>Get results</strong><span>Review each rotation with confidence, evidence, and clear limits.</span>
               </li>
             </ol>
           </div>
@@ -308,6 +312,11 @@ export default function App() {
         />
 
         <footer className="footer">
+          <div className="footer-brand">
+            <strong>Agri</strong>
+            <span>© {new Date().getFullYear()} Agri. All rights reserved.</span>
+          </div>
+          <p className="footer-credit">Designed and developed by <strong>Team Khala Ji Ka Waara</strong>.</p>
           <p>
             Independent project. Not affiliated with, endorsed by, or produced by NASA or NASA Space Apps. NASA
             does not endorse any non-U.S. Government entity.

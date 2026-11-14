@@ -23,11 +23,12 @@ export function ScenarioCard({ scenario, position, recommended = false }: { scen
           <span className="score-value">
             {scenario.index === null ? "No index" : scenario.index.toFixed(1)}
           </span>
-          <span className="small muted">
-            {scenario.index === null ? "not enough evidence" : "higher = more favourable, relative to these options"}
-          </span>
         </div>
       </header>
+
+      <p className="scenario-index-caption small muted">
+        {scenario.index === null ? "Not enough evidence to calculate an index." : "Higher = more favourable, relative to these options."}
+      </p>
 
       <div className="pill-row">
         <Badge tone={confidenceTone}>{confidenceLabel(scenario.confidence)}</Badge>
