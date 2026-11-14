@@ -355,6 +355,7 @@ describe("Field Shift application", () => {
     expect(await screen.findByRole("heading", { name: /environmental evidence/i })).toBeInTheDocument();
     expect(mocked.compareRotations).toHaveBeenCalled();
     expect(mocked.compareRotations.mock.calls[0]![0].point.lat).toBeCloseTo(30.1575, 4);
+    expect((await screen.findAllByText("Multan, Punjab")).length).toBeGreaterThanOrEqual(2);
   });
 
   it("shows evidence, comparison indices and provenance after a successful run", async () => {

@@ -13,18 +13,18 @@ export function ScenarioCard({ scenario, position, recommended = false }: { scen
       <header className="scenario-head">
         <div>
           <p className="eyebrow">Option {position}</p>
-          <h3>
-            {scenario.label}
+          <h3>{scenario.label}</h3>
+          <div className="scenario-tags">
             {scenario.isBaseline ? <span className="tag">your current rotation</span> : null}
             {recommended ? <span className="tag tag-recommended">recommended</span> : null}
-          </h3>
+          </div>
         </div>
         <div className="scenario-score">
           <span className="score-value">
             {scenario.index === null ? "No index" : scenario.index.toFixed(1)}
           </span>
           <span className="small muted">
-            {scenario.index === null ? "not enough evidence" : "comparative index (0–100)"}
+            {scenario.index === null ? "not enough evidence" : "higher = more favourable, relative to these options"}
           </span>
         </div>
       </header>

@@ -21,7 +21,7 @@ export function HistorySection({ entries, onOpen, onDelete }: Props) {
         <div className="history-list">
           {entries.map((entry) => (
             <article className="history-entry" key={entry.id}>
-              <div><strong>Faisalabad, Punjab</strong><span>{new Date(entry.savedAt).toLocaleString()}</span></div>
+              <div><strong>{entry.profile.locationLabel || "Location unavailable"}</strong><span>{new Date(entry.savedAt).toLocaleString()}</span></div>
               <div><span>{entry.profile.season === "kharif" ? "Kharif" : "Rabi"} {entry.profile.planningYear}</span><span>{Math.round(entry.comparison.evidenceCoverage * 100)}% evidence coverage</span></div>
               <div className="history-actions">
                 <button type="button" className="button button-secondary" onClick={() => onOpen(entry)}>View original analysis</button>

@@ -239,12 +239,12 @@ export function EvidenceSection({ evidence, loading, error, onRetry }: Props) {
               <p>No soil record was returned for this request.</p>
             </Alert>
           ) : evidence.soil.status === "failed" ? (
-            <Alert variant="warning" title="Soil data could not be retrieved">
-              <p>
-                {evidence.soil.error?.message ??
-                  "The soil service did not return a usable response."}{" "}
-                Soil is treated as unknown; it was not replaced with a regional average.
-              </p>
+            <Alert variant="warning" title="Soil information temporarily unavailable">
+              <p>We couldn&apos;t retrieve soil information for this analysis. Other available environmental evidence is still shown.</p>
+              <details className="technical-details">
+                <summary>Technical details</summary>
+                <p className="small">Source: SoilGrids · status: failed. {evidence.soil.error?.message ?? "The soil service did not return a usable response."}</p>
+              </details>
             </Alert>
           ) : evidence.soil.status === "unavailable" ? (
             <Alert variant="warning" title="No soil values exist at this point">

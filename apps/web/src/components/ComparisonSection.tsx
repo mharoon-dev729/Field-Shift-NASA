@@ -105,6 +105,7 @@ export function ComparisonSection({ result, loading, error, onRetry }: Props) {
                   <Badge tone="good">Ranked {result.ranking.length} of {result.scenarios.length} options</Badge>
                 ) : null}
               </div>
+              <p className="index-guide">Higher comparative index values indicate a more favourable result relative to the rotations shown. This is not a percentage or a yield forecast.</p>
 
               {result.pairwise.filter((pair) => !pair.meaningful).length > 0 ? (
                 <Alert variant="info" title="Some differences are too small to call">

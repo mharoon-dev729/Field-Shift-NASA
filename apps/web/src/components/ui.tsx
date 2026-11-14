@@ -113,10 +113,15 @@ export function Sparkline({
 
   const missing = points.length - numbers.length;
 
+  const chartKind = label.toLowerCase().includes("rainfall") ? "bar" : "line";
+  const dateRange = `${points[0]?.date ?? ""} to ${points[points.length - 1]?.date ?? ""}`;
+
   return (
     <figure className="spark">
+      <div className="spark-head"><strong>{label}</strong><span>{unit}</span></div>
+      <p className="spark-description">Daily values from {dateRange}. Missing days remain visible as gaps.</p>
       <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`${label} daily series, ${unit}`}>
-        <path d={path} fill="none" stroke="currentColor" strokeWidth="1.6" />
+        {chartKind === "bar" ? points.map((point, index) => point.value === null ? null : <rect key={point.date} x={(index / points.length) * width} y={height - ((point.value - min) / span) * (height - 8) - 4} width={Math.max(1, width / points.length - 1)} height={((point.value - min) / span) * (height - 8) + 4} rx="1" />) : <path d={path} fill="none" stroke="currentColor" strokeWidth="1.8" />}
       </svg>
       <figcaption className="small muted">
         {label} · {unit} · min {min.toFixed(2)} / max {max.toFixed(2)}

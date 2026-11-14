@@ -56,7 +56,7 @@ export function FarmForm({
   function selectArea(area: (typeof SUPPORTED_AREAS)[number]) {
     setSelectedArea(area.id);
     setLocationQuery("");
-    onChange({ lat: String(area.lat), lon: String(area.lon) });
+    onChange({ locationLabel: `${area.label}, ${area.province}`, lat: String(area.lat), lon: String(area.lon) });
   }
 
   return (
@@ -82,6 +82,7 @@ export function FarmForm({
             <div className="location-options" role="listbox" aria-label="Supported farm areas">
               {matchingAreas.length === 0 ? <p className="muted small">No supported farm area found. Only documented Punjab farm areas are currently available.</p> : matchingAreas.map((area) => <button key={area.id} type="button" role="option" aria-selected={selectedArea === area.id} className={selectedArea === area.id ? "location-option selected" : "location-option"} onClick={() => selectArea(area)}><span>{area.label}</span><small>{area.province}</small></button>)}
             </div>
+            <p className="location-selected" aria-live="polite">Selected area: <strong>{profile.locationLabel}</strong></p>
             <p className="field-hint">These are geographic farm areas, not verified individual farms. NASA POWER provides regional grid-cell estimates; the rotation catalogue is currently documented for Punjab.</p>
           </div>
           {errors["lat"] || errors["lon"] ? <p className="field-error" role="alert">{errors["lat"] ?? errors["lon"]}</p> : null}

@@ -11,6 +11,7 @@ export type SeasonValue = "rabi" | "kharif";
 export type IrrigationValue = "canal" | "tubewell" | "both" | "rainfed";
 
 export interface FarmProfileInput {
+  locationLabel: string;
   lat: string;
   lon: string;
   season: SeasonValue;
@@ -27,6 +28,7 @@ export interface FarmProfileInput {
 }
 
 export const DEFAULT_PROFILE: FarmProfileInput = {
+  locationLabel: "Faisalabad, Punjab",
   lat: String(PILOT.anchor.lat),
   lon: String(PILOT.anchor.lon),
   season: "kharif",
