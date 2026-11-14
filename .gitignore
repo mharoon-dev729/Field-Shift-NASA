@@ -1,0 +1,45 @@
+# ---- Secrets (never commit) ----
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+!secrets/.gitkeep
+
+# ---- Node ----
+node_modules/
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.npm/
+
+# ---- Build output ----
+dist/
+build/
+.vite/
+*.tsbuildinfo
+
+# ---- Python (future data tooling) ----
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# ---- Data caches / fixtures that must not be mistaken for real observations ----
+.cache/
+tmp/
+*.h5
+*.hdf
+*.nc
+*.tif
+*.tiff
+reference/*.pdf
+
+# ---- Tool / editor state ----
+.freebuff/
+.cloud-attachments/
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

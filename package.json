@@ -1,0 +1,23 @@
+{
+  "name": "field-shift",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Field Shift — crop-rotation decision support using NASA Earth observations (Faisalabad, Punjab pilot)",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "npm run build --workspace @fieldshift/shared && npm run build --workspace @fieldshift/api && npm run build --workspace @fieldshift/web",
+    "typecheck": "npm run build --workspace @fieldshift/shared && npm run typecheck --workspace @fieldshift/api && npm run typecheck --workspace @fieldshift/web",
+    "test": "npm run test --workspace @fieldshift/api && npm run test --workspace @fieldshift/web",
+    "dev:api": "npm run dev --workspace @fieldshift/api",
+    "dev:web": "npm run dev --workspace @fieldshift/web"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  }
+}
