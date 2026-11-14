@@ -4,18 +4,19 @@ import { confidenceLabel, formatPercent } from "../lib/format.js";
 import { Badge } from "./ui.js";
 import { CriterionRow } from "./CriterionRow.js";
 
-export function ScenarioCard({ scenario, position }: { scenario: ScenarioResult; position: number }) {
+export function ScenarioCard({ scenario, position, recommended = false }: { scenario: ScenarioResult; position: number; recommended?: boolean }) {
   const confidenceTone =
     scenario.confidence === "moderate" ? "good" : scenario.confidence === "low" ? "warning" : "bad";
 
   return (
-    <article className={`scenario${scenario.isBaseline ? " scenario-baseline" : ""}`}>
+    <article className={`scenario${scenario.isBaseline ? " scenario-baseline" : ""}${recommended ? " scenario-recommended" : ""}`}>
       <header className="scenario-head">
         <div>
           <p className="eyebrow">Option {position}</p>
           <h3>
             {scenario.label}
             {scenario.isBaseline ? <span className="tag">your current rotation</span> : null}
+            {recommended ? <span className="tag tag-recommended">recommended</span> : null}
           </h3>
         </div>
         <div className="scenario-score">

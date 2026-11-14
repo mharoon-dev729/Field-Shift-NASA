@@ -36,6 +36,23 @@ function friendly(variable: string, fallback: string) {
   return FRIENDLY_VARIABLES[variable] ?? { label: fallback, note: "Environmental evidence for the selected period." };
 }
 
+function indicatorValue(evidence: EvidenceResponse, id: string): number | null {
+  return evidence.indicators.find((indicator) => indicator.id === id)?.value ?? null;
+}
+
+function seriesValues(evidence: EvidenceResponse, variable: string): number[] {
+  return evidence.dailySeries.find((series) => series.variable === variable)?.points.flatMap((point) => point.value === null ? [] : [point.value]) ?? [];
+}
+
+function rainfallBars(evidence: EvidenceResponse): number[] {
+  const values = seriesValues(evidence, "PRECTOTCORR");
+  if (values.length === 0) return [];
+  const size = Math.ceil(values.length / 6);
+  const buckets = Array.from({ length: 6 }, (_, index) => values.slice(index * size, (index + 1) * size).reduce((sum, value) => sum + value, 0));
+  const max = Math.max(...buckets, 1);
+  return buckets.map((value) => (value / max) * 100);
+}
+
 export function EvidenceSection({ evidence, loading, error, onRetry }: Props) {
   return (
     <section className="card" aria-labelledby="evidence-heading" id="evidence">
@@ -70,6 +87,39 @@ export function EvidenceSection({ evidence, loading, error, onRetry }: Props) {
 
       {evidence ? (
         <div className="stack">
+          {(() => {
+            const temperature = seriesValues(evidence, "T2M");
+            const rainfall = rainfallBars(evidence);
+            const wetness = indicatorValue(evidence, "meanGwetroot");
+            return <>
+          <section className="evidence-overview" aria-label="Environmental conditions overview">
+            <div className="evidence-visual temperature-visual">
+              <span className="meta-label">Temperature conditions</span>
+              <strong>{indicatorValue(evidence, "meanT2M") === null ? NOT_AVAILABLE : `${formatNumber(indicatorValue(evidence, "meanT2M")!, 1)} °C`}</strong>
+              <span>Average air temperature</span>
+              {temperature.length > 0 ? <div className="temperature-range" aria-label={`Lowest ${Math.min(...temperature).toFixed(1)} °C, average ${(temperature.reduce((sum, value) => sum + value, 0) / temperature.length).toFixed(1)} °C, highest ${Math.max(...temperature).toFixed(1)} °C`}><i style={{ height: `${Math.max(10, Math.min(...temperature) / Math.max(...temperature) * 30)}px` }} /><i style={{ height: `${Math.max(10, (temperature.reduce((sum, value) => sum + value, 0) / temperature.length) / Math.max(...temperature) * 30)}px` }} /><i style={{ height: "30px" }} /></div> : null}
+            </div>
+            <div className="evidence-visual rain-visual">
+              <span className="meta-label">Season rainfall</span>
+              <strong>{indicatorValue(evidence, "seasonRainMm") === null ? NOT_AVAILABLE : `${formatNumber(indicatorValue(evidence, "seasonRainMm")!, 0)} mm`}</strong>
+              <span>Actual total across the selected window</span>
+              {rainfall.length > 0 ? <div className="rain-bars" aria-label="Rainfall totals across six sequential parts of the selected period">{rainfall.map((height, index) => <i key={index} style={{ height: `${Math.max(4, height)}%` }} />)}</div> : null}
+            </div>
+            <div className="evidence-visual wetness-visual">
+              <span className="meta-label">Root-zone wetness</span>
+              <strong>{indicatorValue(evidence, "meanGwetroot") === null ? NOT_AVAILABLE : formatNumber(indicatorValue(evidence, "meanGwetroot")!, 2)}</strong>
+              <span>Modelled scale, not a field moisture reading</span>
+              {wetness !== null ? <div className="wetness-gauge" aria-label={`Modelled root-zone wetness ${wetness.toFixed(2)} on its source scale from 0 to 1`}><i style={{ width: `${Math.max(0, Math.min(100, wetness * 100))}%` }} /></div> : null}
+            </div>
+            <div className="evidence-visual coverage-visual">
+              <span className="meta-label">Evidence coverage</span>
+              <strong>{formatNumber((evidence.quality.sourcesOk.length / Math.max(evidence.sources.length, 1)) * 100, 0)}%</strong>
+              <span>{evidence.quality.sourcesOk.length} of {evidence.sources.length} requested sources available</span>
+              <div className="coverage-bar" aria-hidden="true"><i style={{ width: `${(evidence.quality.sourcesOk.length / Math.max(evidence.sources.length, 1)) * 100}%` }} /></div>
+            </div>
+          </section>
+          </>;
+          })()}
           <div className="meta-row">
             <div>
               <span className="meta-label">Window</span>

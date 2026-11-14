@@ -19,6 +19,7 @@ function orderedScenarios(result: EngineResult): ScenarioResult[] {
 }
 
 export function ComparisonSection({ result, loading, error, onRetry }: Props) {
+  const recommendedId = result && result.status !== "insufficient_evidence" && result.ranking.length > 0 && result.pairwise.some((pair) => pair.meaningful && pair.a === result.ranking[0]) ? result.ranking[0] : null;
   return (
     <section className="card" aria-labelledby="comparison-heading" id="comparison">
       <div className="card-head">
@@ -147,8 +148,8 @@ export function ComparisonSection({ result, loading, error, onRetry }: Props) {
           ) : null}
 
           <div className="scenario-list">
-            {orderedScenarios(result).map((scenario, index) => (
-              <ScenarioCard key={scenario.scenarioId} scenario={scenario} position={index + 1} />
+              {orderedScenarios(result).map((scenario, index) => (
+              <ScenarioCard key={scenario.scenarioId} scenario={scenario} position={index + 1} recommended={scenario.scenarioId === recommendedId} />
             ))}
           </div>
 

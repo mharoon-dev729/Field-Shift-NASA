@@ -337,22 +337,24 @@ describe("Field Shift application", () => {
 
     expect(await screen.findByRole("heading", { name: /field shift/i, level: 1 })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /why this exists/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /use my current location/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/select your farm location/i)).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: /faisalabad/i })).toHaveAttribute("aria-selected", "true");
     expect(screen.queryByLabelText(/latitude/i)).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/longitude/i)).not.toBeInTheDocument();
     expect(screen.getByLabelText(/rotation you use now/i)).toBeInTheDocument();
   });
 
-  it("lets farmers use the documented pilot-area fallback", async () => {
+  it("maps a selected supported farm area to its own analysis point", async () => {
     const user = userEvent.setup();
     render(<App />);
     await screen.findByRole("combobox", { name: /rotation you use now/i });
 
-    await user.click(screen.getByRole("button", { name: /use faisalabad pilot area/i }));
+    await user.click(screen.getByRole("option", { name: /multan/i }));
     await submit(user);
 
     expect(await screen.findByRole("heading", { name: /environmental evidence/i })).toBeInTheDocument();
     expect(mocked.compareRotations).toHaveBeenCalled();
+    expect(mocked.compareRotations.mock.calls[0]![0].point.lat).toBeCloseTo(30.1575, 4);
   });
 
   it("shows evidence, comparison indices and provenance after a successful run", async () => {
@@ -452,7 +454,7 @@ describe("Field Shift application", () => {
 
     expect(await screen.findByText(/the comparison could not be completed/i)).toBeInTheDocument();
     expect(screen.getByText(/NASA POWER did not respond within 20 s/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /use my current location/i })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: /faisalabad/i })).toHaveAttribute("aria-selected", "true");
     expect(screen.queryByText("87.1")).not.toBeInTheDocument();
 
     mocked.compareRotations.mockResolvedValueOnce(result());

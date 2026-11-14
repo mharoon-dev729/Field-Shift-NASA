@@ -1,4 +1,4 @@
-import { PILOT, type CropCatalogueEntry, type RotationCatalogueEntry } from "@fieldshift/shared";
+import { type CropCatalogueEntry, type RotationCatalogueEntry } from "@fieldshift/shared";
 import { useState } from "react";
 
 import type { FarmProfileInput, ProfileErrors, SeasonValue } from "../lib/profile.js";
@@ -21,7 +21,13 @@ const PRIORITY_LABELS: Array<{ key: keyof FarmProfileInput["priorities"]; label:
   { key: "climateResilience", label: "Climate resilience", hint: "Weight heat exposure and frost risk" },
 ];
 
-interface PlaceResult { display_name: string; lat: string; lon: string; }
+const SUPPORTED_AREAS = [
+  { id: "faisalabad", label: "Faisalabad", province: "Punjab", lat: 31.4187, lon: 73.0791 },
+  { id: "multan", label: "Multan", province: "Punjab", lat: 30.1575, lon: 71.5249 },
+  { id: "bahawalpur", label: "Bahawalpur", province: "Punjab", lat: 29.3956, lon: 71.6836 },
+  { id: "lahore", label: "Lahore", province: "Punjab", lat: 31.5204, lon: 74.3587 },
+  { id: "sahiwal", label: "Sahiwal", province: "Punjab", lat: 30.6682, lon: 73.1114 },
+] as const;
 
 export function FarmForm({
   profile,
@@ -33,11 +39,8 @@ export function FarmForm({
   onChange,
   onSubmit,
 }: Props) {
-  const [locationState, setLocationState] = useState<"idle" | "locating" | "selected" | "denied" | "unavailable">("idle");
   const [locationQuery, setLocationQuery] = useState("");
-  const [placeResults, setPlaceResults] = useState<PlaceResult[]>([]);
-  const [placeError, setPlaceError] = useState<string | null>(null);
-  const [searching, setSearching] = useState(false);
+  const [selectedArea, setSelectedArea] = useState("faisalabad");
   const prioritySum =
     profile.priorities.water + profile.priorities.soilHealth + profile.priorities.climateResilience;
 
@@ -49,43 +52,11 @@ export function FarmForm({
     onChange({ candidateRotationIds: next });
   }
 
-  function useCurrentLocation() {
-    if (!navigator.geolocation) {
-      setLocationState("unavailable");
-      return;
-    }
-    setLocationState("locating");
-    navigator.geolocation.getCurrentPosition(
-      ({ coords }) => {
-        onChange({ lat: coords.latitude.toFixed(5), lon: coords.longitude.toFixed(5) });
-        setLocationState("selected");
-      },
-      (error) => setLocationState(error.code === error.PERMISSION_DENIED ? "denied" : "unavailable"),
-      { enableHighAccuracy: true, timeout: 10000 },
-    );
-  }
-
-  async function searchFarmLocation(event: React.FormEvent) {
-    event.preventDefault();
-    const query = locationQuery.trim();
-    if (!query) return;
-    setSearching(true);
-    setPlaceError(null);
-    try {
-      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&countrycodes=pk&q=${encodeURIComponent(query)}`, { headers: { Accept: "application/json" } });
-      if (!response.ok) throw new Error("Search service unavailable");
-      const results: unknown = await response.json();
-      setPlaceResults(Array.isArray(results) ? results.filter((item): item is PlaceResult => typeof item === "object" && item !== null && "display_name" in item && "lat" in item && "lon" in item) : []);
-    } catch {
-      setPlaceError("We could not search places right now. Try again or choose your location on the map.");
-    } finally { setSearching(false); }
-  }
-
-  function selectPlace(place: PlaceResult) {
-    onChange({ lat: Number(place.lat).toFixed(5), lon: Number(place.lon).toFixed(5) });
-    setLocationQuery(place.display_name.split(",").slice(0, 2).join(","));
-    setPlaceResults([]);
-    setLocationState("selected");
+  const matchingAreas = SUPPORTED_AREAS.filter((area) => `${area.label} ${area.province}`.toLowerCase().includes(locationQuery.toLowerCase()));
+  function selectArea(area: (typeof SUPPORTED_AREAS)[number]) {
+    setSelectedArea(area.id);
+    setLocationQuery("");
+    onChange({ lat: String(area.lat), lon: String(area.lon) });
   }
 
   return (
@@ -105,27 +76,13 @@ export function FarmForm({
       >
         <fieldset>
           <legend>1. Farm location</legend>
-          <div className="location-card">
-            <h3>Faisalabad, Punjab</h3>
-            <p>Select your farm location to ground the analysis in local conditions. Your precise coordinates stay private and are used only to request the analysis.</p>
-            {locationState === "selected" ? <p className="location-status">✓ Location selected</p> : null}
-            {locationState === "locating" ? <p className="location-status">Finding your location…</p> : null}
-            {locationState === "denied" ? <p className="location-status">Location access was declined. You can continue with the pilot area.</p> : null}
-            {locationState === "unavailable" ? <p className="location-status">We could not determine a location on this device. You can continue with the pilot area.</p> : null}
-            <div className="location-actions">
-              <button type="button" className="button button-primary" disabled={locationState === "locating"} onClick={useCurrentLocation}>{locationState === "locating" ? "Finding location…" : "Use my current location"}</button>
-              <button type="button" className="button button-secondary" onClick={() => { onChange({ lat: String(PILOT.anchor.lat), lon: String(PILOT.anchor.lon) }); setLocationState("selected"); }}>Use Faisalabad pilot area</button>
+          <div className="farm-location-picker">
+            <label htmlFor="farm-location-search">Select your farm location</label>
+            <input id="farm-location-search" value={locationQuery} onChange={(event) => setLocationQuery(event.target.value)} placeholder="Search or select your farm location…" />
+            <div className="location-options" role="listbox" aria-label="Supported farm areas">
+              {matchingAreas.length === 0 ? <p className="muted small">No supported farm area found. Only documented Punjab farm areas are currently available.</p> : matchingAreas.map((area) => <button key={area.id} type="button" role="option" aria-selected={selectedArea === area.id} className={selectedArea === area.id ? "location-option selected" : "location-option"} onClick={() => selectArea(area)}><span>{area.label}</span><small>{area.province}</small></button>)}
             </div>
-          </div>
-          <div className="location-methods">
-            <form className="location-search" onSubmit={searchFarmLocation}>
-              <label htmlFor="farm-location-search">Search for my farm location</label>
-              <div><input id="farm-location-search" value={locationQuery} onChange={(event) => setLocationQuery(event.target.value)} placeholder="City, district, town, or village" /><button className="button button-secondary" type="submit" disabled={searching}>{searching ? "Searching…" : "Search"}</button></div>
-              <p className="field-hint">Search results are supplied by OpenStreetMap. The selected point is used for NASA data; it is not a field measurement.</p>
-            </form>
-            {placeError ? <p className="field-error" role="alert">{placeError}</p> : null}
-            {placeResults.length > 0 ? <ul className="place-results">{placeResults.map((place) => <li key={`${place.lat}-${place.lon}`}><button type="button" onClick={() => selectPlace(place)}>{place.display_name}</button></li>)}</ul> : null}
-            <details className="map-selector"><summary>Select on map</summary><p>Choose an approximate farm point within Pakistan. NASA data is gridded, so it represents the surrounding area rather than a field-level measurement.</p><div className="map-grid" role="application" aria-label="Pakistan map selector" onClick={(event) => { const rect = event.currentTarget.getBoundingClientRect(); const lon = 60 + ((event.clientX - rect.left) / rect.width) * 20; const lat = 37 - ((event.clientY - rect.top) / rect.height) * 14; onChange({ lat: lat.toFixed(5), lon: lon.toFixed(5) }); setLocationState("selected"); }}><span aria-hidden="true">+</span></div></details>
+            <p className="field-hint">These are geographic farm areas, not verified individual farms. NASA POWER provides regional grid-cell estimates; the rotation catalogue is currently documented for Punjab.</p>
           </div>
           {errors["lat"] || errors["lon"] ? <p className="field-error" role="alert">{errors["lat"] ?? errors["lon"]}</p> : null}
         </fieldset>
