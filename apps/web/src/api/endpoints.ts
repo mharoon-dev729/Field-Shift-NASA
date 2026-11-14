@@ -57,7 +57,9 @@ export async function getEvidence(query: EvidenceQuery, signal?: AbortSignal): P
     year: String(query.year),
   });
 
-  const payload = await apiRequest<unknown>(`/evidence?${search.toString()}`, {}, { signal });
+  // POWER may retry once and runs alongside SoilGrids. This allows that
+  // documented slow path while keeping catalogue/source requests short.
+  const payload = await apiRequest<unknown>(`/evidence?${search.toString()}`, {}, { signal, timeoutMs: 50_000 });
   const parsed = evidenceResponseSchema.safeParse(payload);
   if (!parsed.success) throw invalid("/evidence", parsed.error);
   return parsed.data;
@@ -67,7 +69,10 @@ export async function compareRotations(request: CompareRequest, signal?: AbortSi
   const payload = await apiRequest<unknown>(
     "/compare",
     { method: "POST", body: JSON.stringify(request) },
-    { signal },
+    // A comparison can retrieve two seasonal evidence windows and climatology.
+    // The Vercel function is capped at 120 s, so wait slightly longer for its
+    // response instead of aborting a request the server can still complete.
+    { signal, timeoutMs: 125_000 },
   );
   const parsed = engineResultSchema.safeParse(payload);
   if (!parsed.success) throw invalid("/compare", parsed.error);

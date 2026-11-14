@@ -12,8 +12,8 @@ const NOW = new Date("2026-11-14T09:00:00Z");
 const RABI = resolveSeasonWindow("rabi", 2025);
 const DAYS = daysBetween(RABI.start, RABI.end);
 
-function liveApp() {
-  const { json: powerJson } = makePowerResponse({ start: RABI.start, days: DAYS });
+function liveApp(point = { lat: 31.419, lon: 73.079 }) {
+  const { json: powerJson } = makePowerResponse({ start: RABI.start, days: DAYS, ...point });
   const { json: soilJson } = makeSoilResponse();
   const { fetchImpl } = stubFetch(async (url) =>
     url.includes("power.larc") ? jsonResponse(powerJson) : jsonResponse(soilJson),
@@ -72,13 +72,12 @@ describe("GET /api/v1/evidence", () => {
     expect(res.status).toBe(400);
   });
 
-  it("returns 422 with the nearest valid point outside the pilot area", async () => {
-    const res = await request(liveApp())
+  it("returns evidence outside the former pilot boundary when sources resolve the requested area", async () => {
+    const res = await request(liveApp({ lat: 24.86, lon: 67.0 }))
       .get("/api/v1/evidence")
       .query({ lat: 24.86, lon: 67.0, season: "rabi", year: 2025 });
-    expect(res.status).toBe(422);
-    expect(res.body.error.code).toBe("OUT_OF_COVERAGE");
-    expect(res.body.error.details.nearestValidPoint).toBeDefined();
+    expect(res.status).toBe(200);
+    expect(res.body.point.requested).toEqual({ lat: 24.86, lon: 67 });
   });
 
   it("rejects unknown query parameters (strict schema)", async () => {

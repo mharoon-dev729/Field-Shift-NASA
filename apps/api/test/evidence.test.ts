@@ -17,10 +17,12 @@ const NOW = new Date("2026-11-14T09:00:00Z");
 const RABI_2025 = resolveSeasonWindow("rabi", 2025); // 2025-11-01 .. 2026-05-05
 const RABI_DAYS = daysBetween(RABI_2025.start, RABI_2025.end);
 
-function happySources(options: { failSoil?: boolean; failPower?: boolean } = {}) {
+function happySources(options: { failSoil?: boolean; failPower?: boolean; lat?: number; lon?: number } = {}) {
   const { json: powerJson } = makePowerResponse({
     start: RABI_2025.start,
     days: RABI_DAYS,
+    lat: options.lat,
+    lon: options.lon,
   });
   const { json: soilJson } = makeSoilResponse();
 
@@ -148,17 +150,13 @@ describe("evidence service", () => {
     await expect(service(fetchImpl)(QUERY)).rejects.toMatchObject({ code: "SOURCE_UNAVAILABLE" });
   });
 
-  it("rejects a point outside the pilot boundary with the nearest valid point", async () => {
-    const { fetchImpl } = happySources();
-    try {
-      await service(fetchImpl)({ lat: 24.86, lon: 67.0, season: "rabi", year: 2025 });
-      throw new Error("expected rejection");
-    } catch (err) {
-      expect(err).toBeInstanceOf(AppError);
-      const appErr = err as AppError;
-      expect(appErr.code).toBe("OUT_OF_COVERAGE");
-      expect(appErr.details["nearestValidPoint"]).toBeDefined();
-    }
+  it("supports evidence retrieval outside the former pilot boundary", async () => {
+    const point = { lat: 24.86, lon: 67.0 };
+    const { fetchImpl } = happySources(point);
+    const result = await service(fetchImpl)({ ...point, season: "rabi", year: 2025 });
+
+    expect(result.point.requested).toEqual(point);
+    expect(result.sources.find((source) => source.id === "nasa_power")?.status).toBe("ok");
   });
 
   it("rejects a season window that is entirely in the future", async () => {
