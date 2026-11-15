@@ -1,0 +1,11 @@
+{
+  "remoteName": "origin",
+  "projects": [
+    {
+      "id": "prj_UxCNlOFRu1Gwl9wUimjGqniwXGQb",
+      "name": "nasa-hackathon-field-shift",
+      "directory": ".",
+      "orgId": "team_3NxuhCZXxSPkHAQJM9bL2Bho"
+    }
+  ]
+}

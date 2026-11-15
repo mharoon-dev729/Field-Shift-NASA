@@ -1,0 +1,13 @@
+{
+  "settings": {
+    "createdAt": 1794679557519,
+    "framework": "express",
+    "devCommand": null,
+    "installCommand": "npm ci",
+    "buildCommand": "npm run build",
+    "outputDirectory": "apps/web/dist",
+    "rootDirectory": null,
+    "directoryListing": false,
+    "nodeVersion": "26.x"
+  }
+}
