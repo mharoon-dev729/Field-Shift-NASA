@@ -26,6 +26,7 @@ export default function App() {
   const [sources, setSources] = useState<SourcesResponse | null>(null);
   const [sourcesError, setSourcesError] = useState<string | null>(null);
   const [sourcesOpen, setSourcesOpen] = useState(false);
+  const [navOpen, setNavOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [history, setHistory] = useState<AnalysisHistoryEntry[]>(() => loadHistory());
@@ -68,7 +69,6 @@ export default function App() {
   }, [profile.planningYear]);
 
   useEffect(() => {
-    void loadCatalogue();
     const controller = new AbortController();
     getSources(controller.signal)
       .then(setSources)
@@ -77,8 +77,22 @@ export default function App() {
         setSourcesError(messageOf(err));
       });
     return () => controller.abort();
-    // Catalogue is refreshed deliberately when the planning year changes.
   }, []);
+
+  useEffect(() => {
+    // The catalogue endpoint is year-aware, so it is refreshed deliberately when
+    // the analysis year changes.
+    void loadCatalogue();
+  }, [loadCatalogue]);
+
+  useEffect(() => {
+    if (!navOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setNavOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [navOpen]);
 
   useEffect(() => {
     const onScroll = () => {
@@ -96,6 +110,17 @@ export default function App() {
     savedRunRef.current = comparison.runId;
     setHistory(saveHistory({ id: comparison.runId, savedAt: new Date().toISOString(), profile, evidence, comparison }));
   }, [comparison, evidence, pending, comparisonError, evidenceError, profile]);
+
+  useEffect(() => {
+    const shownYear = comparison?.inputEcho.planningYear ?? evidence?.request.year;
+    if (shownYear === undefined || shownYear === Number(profile.planningYear)) return;
+    // Selecting another year must not leave last year's evidence on screen.
+    setComparison(null);
+    setEvidence(null);
+    setComparisonError(null);
+    setEvidenceError(null);
+    savedRunRef.current = null;
+  }, [profile.planningYear, comparison, evidence]);
 
   const updateProfile = useCallback((patch: Partial<FarmProfileInput>) => {
     setProfile((current) => ({ ...current, ...patch }));
@@ -196,9 +221,28 @@ export default function App() {
         <header className="masthead" aria-label="Agri main header">
           <div className={`topbar${scrolled ? " topbar-scrolled" : ""}`}>
             <div className="brand"><span className="brand-mark" aria-hidden="true">◒</span>Agri</div>
-            <nav className="main-nav" aria-label="Main navigation">
-              <a href="#home">Home</a><a href="#profile-heading">Farm setup</a><a href="#results">Results</a><a href="#history">Analysis history</a>
-              <a href="#evidence">Evidence</a>
+            <button
+              type="button"
+              className="nav-toggle"
+              aria-label={navOpen ? "Close navigation menu" : "Open navigation menu"}
+              aria-expanded={navOpen}
+              aria-controls="main-nav"
+              onClick={() => setNavOpen((open) => !open)}
+            >
+              <span aria-hidden="true" /><span aria-hidden="true" /><span aria-hidden="true" />
+            </button>
+            <nav id="main-nav" className={`main-nav${navOpen ? " open" : ""}`} aria-label="Main navigation">
+              {[
+                ["#home", "Home"],
+                ["#profile-heading", "Farm setup"],
+                ["#results", "Results"],
+                ["#history", "Analysis history"],
+                ["#evidence", "Evidence"],
+              ].map(([href, label]) => (
+                <a key={href} href={href} onClick={() => setNavOpen(false)}>
+                  {label}
+                </a>
+              ))}
             </nav>
             <button type="button" className="button secondary" onClick={() => setSourcesOpen(true)}>Sources & assumptions</button>
           </div>

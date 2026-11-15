@@ -212,6 +212,39 @@ export const PILOT = {
   disclaimer: "Independent project. Not affiliated with or endorsed by NASA.",
 } as const;
 
+/**
+ * Analysis-year support window.
+ *
+ * NASA POWER daily (MERRA-2) coverage starts in 1980. This prototype only offers
+ * years whose season window has already ended, because a season that is still
+ * running cannot carry complete evidence.
+ */
+export const ANALYSIS_YEAR_MIN = 1980;
+
+/**
+ * Latest analysis year whose season window has fully ended.
+ *
+ * Documented season windows:
+ *   kharif Y -> 1 Apr Y .. late Nov Y
+ *   rabi   Y -> 1 Nov Y .. early May Y+1
+ *
+ * Before June, the previous calendar year's rabi season is still running, so the
+ * latest complete planning year is Y-2; from June onward it is Y-1.
+ */
+export function latestCompleteAnalysisYear(now: Date = new Date()): number {
+  const year = now.getUTCFullYear();
+  const month = now.getUTCMonth() + 1;
+  return month < 6 ? year - 2 : year - 1;
+}
+
+/** Descending list of analysis years this application can process today. */
+export function supportedAnalysisYears(now: Date = new Date()): number[] {
+  const latest = latestCompleteAnalysisYear(now);
+  const years: number[] = [];
+  for (let year = latest; year >= ANALYSIS_YEAR_MIN; year -= 1) years.push(year);
+  return years;
+}
+
 /** --- Validation schemas (server-enforced) --- */
 
 /**

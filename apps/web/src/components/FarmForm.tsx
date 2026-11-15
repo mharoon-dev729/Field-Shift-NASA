@@ -1,4 +1,8 @@
-import { type CropCatalogueEntry, type RotationCatalogueEntry } from "@fieldshift/shared";
+import {
+  supportedAnalysisYears,
+  type CropCatalogueEntry,
+  type RotationCatalogueEntry,
+} from "@fieldshift/shared";
 import { useState } from "react";
 
 import type { FarmProfileInput, ProfileErrors, SeasonValue } from "../lib/profile.js";
@@ -28,6 +32,9 @@ const SUPPORTED_AREAS = [
   { id: "lahore", label: "Lahore", province: "Punjab", lat: 31.5204, lon: 74.3587 },
   { id: "sahiwal", label: "Sahiwal", province: "Punjab", lat: 30.6682, lon: 73.1114 },
 ] as const;
+
+/** Years the backend can actually evidence: ended seasons only, NASA POWER from 1980. */
+const ANALYSIS_YEARS = supportedAnalysisYears();
 
 export function FarmForm({
   profile,
@@ -106,15 +113,20 @@ export function FarmForm({
               id="planningYear"
               label="Analysis year"
               error={errors["planningYear"]}
-              hint="The year the season's sowing window starts. Past seasons have complete evidence."
+              hint="Select a year with available NASA environmental data. Only seasons that have already ended are offered."
             >
-              <input
+              <select
                 id="planningYear"
                 name="planningYear"
-                inputMode="numeric"
                 value={profile.planningYear}
                 onChange={(e) => onChange({ planningYear: e.target.value })}
-              />
+              >
+                {ANALYSIS_YEARS.map((year) => (
+                  <option key={year} value={String(year)}>
+                    {year}
+                  </option>
+                ))}
+              </select>
             </Field>
           </div>
         </fieldset>

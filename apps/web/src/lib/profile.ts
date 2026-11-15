@@ -5,7 +5,14 @@
  * accept something the API would reject (and vice versa).
  */
 
-import { compareRequestSchema, PILOT, type CompareRequest } from "@fieldshift/shared";
+import {
+  ANALYSIS_YEAR_MIN,
+  compareRequestSchema,
+  latestCompleteAnalysisYear,
+  PILOT,
+  supportedAnalysisYears,
+  type CompareRequest,
+} from "@fieldshift/shared";
 
 export type SeasonValue = "rabi" | "kharif";
 export type IrrigationValue = "canal" | "tubewell" | "both" | "rainfed";
@@ -32,7 +39,7 @@ export const DEFAULT_PROFILE: FarmProfileInput = {
   lat: String(PILOT.anchor.lat),
   lon: String(PILOT.anchor.lon),
   season: "kharif",
-  planningYear: String(new Date().getUTCFullYear() - 1),
+  planningYear: String(latestCompleteAnalysisYear()),
   currentRotationId: "wheat-cotton",
   previousCropId: "",
   irrigation: "canal",
@@ -68,8 +75,10 @@ export function buildCompareRequest(profile: FarmProfileInput): BuildResult {
   if (profile.lon.trim() === "" || !Number.isFinite(lon)) errors["lon"] = "Enter a longitude in decimal degrees.";
 
   const year = Number(profile.planningYear);
-  if (!Number.isInteger(year) || year < 1980 || year > new Date().getUTCFullYear() + 1) {
-    errors["planningYear"] = `Choose a year between 1980 and ${new Date().getUTCFullYear() + 1}.`;
+  const supportedYears = supportedAnalysisYears();
+  if (!Number.isInteger(year) || !supportedYears.includes(year)) {
+    const latest = supportedYears[0] ?? latestCompleteAnalysisYear();
+    errors["planningYear"] = `Choose a supported analysis year (${ANALYSIS_YEAR_MIN}–${latest}).`;
   }
 
   if (profile.candidateRotationIds.length === 0) {

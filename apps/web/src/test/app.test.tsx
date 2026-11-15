@@ -10,8 +10,11 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type {
-  CropsResponse,
+import {
+  ANALYSIS_YEAR_MIN,
+  latestCompleteAnalysisYear,
+  supportedAnalysisYears,
+  type CropsResponse,
   EngineResult,
   EvidenceResponse,
   ScenarioResult,
@@ -20,6 +23,7 @@ import type {
 
 import App from "../App.js";
 import { ApiError } from "../api/client.js";
+import { buildCompareRequest, DEFAULT_PROFILE } from "../lib/profile.js";
 import * as endpoints from "../api/endpoints.js";
 
 vi.mock("../api/endpoints.js", () => ({
@@ -527,4 +531,88 @@ describe("Field Shift application", () => {
     await user.click(within(dialog).getByRole("button", { name: /close/i }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
+
+  it("offers only supported analysis years and defaults to the latest complete season", async () => {
+    render(<App />);
+
+    const select = (await screen.findByLabelText(/analysis year/i)) as HTMLSelectElement;
+    expect(select.tagName).toBe("SELECT");
+
+    const years = supportedAnalysisYears();
+    expect([...select.options].map((option) => Number(option.value))).toEqual(years);
+    expect(Number(select.value)).toBe(latestCompleteAnalysisYear());
+
+    // The default is the latest *ended* season, never the running calendar year.
+    expect(years[0]).toBe(latestCompleteAnalysisYear());
+    expect(years[0]).toBeLessThan(new Date().getUTCFullYear());
+    expect(years[years.length - 1]).toBe(ANALYSIS_YEAR_MIN);
+
+    await userEvent.setup().selectOptions(select, String(years[1]));
+    expect(Number(select.value)).toBe(years[1]);
+  });
+
+  it("sends the selected analysis year to the API and drops results from another year", async () => {
+    const user = userEvent.setup();
+    const years = supportedAnalysisYears();
+    const earlier = years[1]!;
+    mocked.compareRotations.mockResolvedValueOnce(
+      result({ inputEcho: { ...result().inputEcho, planningYear: earlier } }),
+    );
+
+    render(<App />);
+    await screen.findByRole("combobox", { name: /rotation you use now/i });
+
+    await user.selectOptions(screen.getByLabelText(/analysis year/i), String(earlier));
+    await waitFor(() => {
+      expect(mocked.getCatalogue).toHaveBeenLastCalledWith(expect.objectContaining({ year: earlier }));
+    });
+
+    await submit(user);
+
+    expect(mocked.compareRotations).toHaveBeenCalledTimes(1);
+    expect(mocked.compareRotations.mock.calls[0]![0].planningYear).toBe(earlier);
+    expect((await screen.findAllByText("87.1")).length).toBeGreaterThan(0);
+
+    // Selecting a different year must not leave the previous year's evidence visible.
+    await user.selectOptions(screen.getByLabelText(/analysis year/i), String(years[2]!));
+    await waitFor(() => {
+      expect(screen.queryByText("87.1")).not.toBeInTheDocument();
+    });
+  });
+
+  it("rejects an analysis year the application cannot evidence", () => {
+    const latest = latestCompleteAnalysisYear();
+
+    const future = buildCompareRequest({ ...DEFAULT_PROFILE, planningYear: String(latest + 1) });
+    expect(future.request).toBeNull();
+    expect(future.errors["planningYear"]).toMatch(/supported analysis year/i);
+
+    const tooOld = buildCompareRequest({ ...DEFAULT_PROFILE, planningYear: String(ANALYSIS_YEAR_MIN - 1) });
+    expect(tooOld.request).toBeNull();
+    expect(tooOld.errors["planningYear"]).toMatch(/supported analysis year/i);
+
+    const supported = buildCompareRequest({ ...DEFAULT_PROFILE, planningYear: String(latest) });
+    expect(supported.errors["planningYear"]).toBeUndefined();
+    expect(supported.request?.planningYear).toBe(latest);
+  });
+
+  it("exposes an accessible mobile navigation toggle", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    const toggle = screen.getByRole("button", { name: /open navigation menu/i });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+
+    await user.click(toggle);
+
+    const closeToggle = screen.getByRole("button", { name: /close navigation menu/i });
+    expect(closeToggle).toHaveAttribute("aria-expanded", "true");
+
+    const nav = screen.getByRole("navigation", { name: /main navigation/i });
+    expect(nav).toHaveClass("open");
+
+    await user.click(within(nav).getByRole("link", { name: /farm setup/i }));
+    expect(nav).not.toHaveClass("open");
+  });
+
 });

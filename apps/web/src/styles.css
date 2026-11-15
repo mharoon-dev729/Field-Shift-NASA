@@ -17,3 +17,231 @@
 .footer{display:grid;grid-template-columns:1fr auto;gap:10px 28px;padding:28px 0 30px;border-top:1px solid #cfe2d2;color:var(--muted)}.footer p{margin:0;max-width:720px}.footer-brand{display:flex;align-items:baseline;gap:11px;color:var(--muted);font-size:12px}.footer-brand strong{color:var(--green-dark);font:700 21px/1 Fraunces,Georgia,serif}.footer-credit{justify-self:end;text-align:right;font-size:13px;color:var(--green-dark)}
 @media(max-width:700px){.footer{grid-template-columns:1fr;gap:12px;padding:26px 20px}.footer-credit{justify-self:start;text-align:left}.footer-brand{flex-wrap:wrap}}
 @media(max-width:700px){.page{width:100%}.page>.intro,.page>.card,.page>.results-heading,.page>.footer,.page>.alert{width:100%;margin-left:0;margin-right:0}.masthead{margin:0;border-radius:0;min-height:700px;overflow:visible}.topbar{padding:0 18px;height:58px}.main-nav{display:none}.hero-copy{padding:100px 23px 155px;width:100%}.masthead h1{font-size:42px}.lede{font-size:15px}.hero-facts{padding:17px 20px;grid-template-columns:1fr;gap:7px}.hero-facts div{padding-left:10px}.intro,.card{border-radius:0;margin:0;padding:24px 20px;border-left:0;border-right:0}.intro-grid{grid-template-columns:1fr}.how-steps{grid-template-columns:1fr}.how-steps li{min-height:0}.how-steps li:last-child{grid-column:span 1}.card-head,.journey-head{display:block}.stepper{margin-top:15px}.field-row,.field-row.three{grid-template-columns:1fr}.checklist{grid-template-columns:1fr}.actions{align-items:stretch;flex-direction:column}.actions .button{width:100%}.meta-row{grid-template-columns:1fr}.evidence-overview{grid-template-columns:1fr 1fr}.stat-grid{grid-template-columns:1fr}.scenario-list{grid-template-columns:1fr}.scenario-head{flex-direction:column}.scenario-score{text-align:left;min-width:0}.ranking{flex-direction:column}.history-entry{grid-template-columns:1fr;gap:10px}.history-entry .button{width:100%}.results-heading{margin:28px 20px 8px}.location-card{padding:17px}.hero-actions{gap:10px;flex-wrap:wrap}.hero-actions .button{padding:11px 13px}.footer{margin:0;padding:25px 20px}}@media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+/* ==========================================================================
+   Phase 12 — responsive layer
+   Mobile-first refinements layered on the existing Agri visual identity.
+   Breakpoints: 1920 (large desktop), 900 (tablet / small laptop), 700 (phone),
+   430 (large phone) and 360 (small phone).
+   ========================================================================== */
+
+/* --- Shared safety: nothing may exceed its container --- */
+img, svg, video, canvas { max-width: 100%; }
+.card, .intro, .scenario, .stat, .evidence-visual, .history-entry, .meta-row > div,
+.spark, .spark-grid, .location-card, .farm-location-picker, .drawer { min-width: 0; }
+.scenario h3, .stat-value, .history-entry strong, .location-selected strong,
+.source-list, .explanation, .bullets { overflow-wrap: anywhere; }
+.stepper { flex-wrap: wrap; }
+select, input, textarea { max-width: 100%; }
+
+/* Anchor targets must not hide beneath the fixed top bar */
+#home, #how-it-works, #profile-heading, #results, #evidence, #history,
+h2[id], section[id] { scroll-margin-top: 104px; }
+
+/* --- Fluid typography: same scale, no oversized mobile headings --- */
+.masthead h1 { font-size: clamp(31px, 5.6vw, 82px); }
+.intro h2, .results-heading { font-size: clamp(23px, 3.2vw, 30px); }
+.card-head h2, .journey-head h2 { font-size: clamp(21px, 3vw, 30px); }
+.lede { font-size: clamp(15px, 1.35vw, 18px); }
+.farm-form legend { font-size: clamp(15px, 2vw, 17px); }
+
+/* --- Charts: scale with the card instead of clipping --- */
+.spark svg { width: 100%; height: auto; display: block; }
+.spark { height: auto; }
+
+/* --- Mobile navigation toggle (hidden until the tablet breakpoint) --- */
+.nav-toggle {
+  display: none;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid #cbe4d0;
+  border-radius: 12px;
+  background: #fff;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 4px;
+}
+.nav-toggle span {
+  display: block;
+  width: 18px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--green-dark);
+  transition: transform .2s ease, opacity .2s ease;
+}
+.nav-toggle[aria-expanded="true"] span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+.nav-toggle[aria-expanded="true"] span:nth-child(2) { opacity: 0; }
+.nav-toggle[aria-expanded="true"] span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+
+/* --- Large desktop: keep the reading measure, widen slightly --- */
+@media (min-width: 1920px) {
+  .page > .intro, .page > .card, .page > .results-heading, .page > .footer,
+  .page > .alert, .footer { width: min(1320px, calc(100% - 96px)); }
+}
+
+/* --- Tablet / small laptop: reorganise instead of shrinking --- */
+@media (max-width: 900px) {
+  .topbar { gap: 12px; padding: 0 clamp(14px, 3vw, 28px); }
+  .nav-toggle { display: inline-flex; order: 2; }
+  .main-nav {
+    display: none;
+    position: absolute;
+    top: calc(100% - 4px);
+    left: 0;
+    right: 0;
+    margin: 0;
+    padding: 10px;
+    flex-direction: column;
+    gap: 2px;
+    border: 1px solid #cbe4d0;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, .98);
+    box-shadow: 0 18px 36px rgba(4, 49, 29, .18);
+    z-index: 30;
+  }
+  .main-nav.open { display: flex; }
+  .main-nav a {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-size: 14px;
+  }
+  .main-nav a:hover { background: var(--sage); }
+  .topbar > .button.secondary { margin-left: auto; order: 3; }
+
+  .masthead { min-height: auto; }
+  .hero-copy { width: 100%; padding: 132px clamp(20px, 5vw, 48px) 56px; }
+  .hero-facts { position: relative; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+  .intro-grid { grid-template-columns: 1fr; gap: 26px; align-items: start; }
+  .intro-copy { max-width: none; }
+  .how-steps { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+
+  .card-head, .journey-head { display: block; }
+  .stepper { margin-top: 14px; }
+
+  .field-row, .field-row.three { grid-template-columns: 1fr 1fr; }
+  .meta-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .evidence-overview { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stat { min-height: 0; }
+  .history-entry { grid-template-columns: 1fr auto; }
+  .history-entry .history-actions { justify-self: end; }
+  .footer { grid-template-columns: 1fr; }
+  .footer-credit { justify-self: start; text-align: left; }
+}
+
+/* --- Phone: single-column, comfortable touch targets --- */
+@media (max-width: 700px) {
+  .page > .intro, .page > .card, .page > .results-heading, .page > .footer,
+  .page > .alert {
+    width: min(calc(100% - 24px), 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .intro, .card { border-radius: 16px; padding: 18px 16px; margin-top: 18px; margin-bottom: 18px; }
+  .results-heading { margin: 26px auto 4px; }
+
+  /* top bar: brand + menu + sources stay on one row */
+  .topbar { height: 62px; top: 10px; left: 10px; right: 10px; border-radius: 14px; gap: 8px; }
+  .brand { font-size: 19px; gap: 6px; }
+  .brand-mark { font-size: 21px; }
+  .topbar > .button.secondary { padding: 9px 11px; font-size: 12px; white-space: nowrap; }
+
+  /* hero */
+  .masthead { min-height: auto; overflow: hidden; }
+  .hero-copy { padding: 98px 16px 40px; filter: none; }
+  .masthead h1 { font-size: clamp(30px, 8.6vw, 40px); line-height: 1.06; }
+  .lede { font-size: 15px; }
+  .hero-actions { flex-direction: column; align-items: stretch; gap: 10px; margin-top: 22px; }
+  .hero-actions .button { width: 100%; min-height: 48px; display: inline-flex; align-items: center; justify-content: center; }
+  .hero-facts { padding: 16px; gap: 8px; }
+  .hero-facts div { padding-left: 8px; font-size: 13px; }
+
+  /* section + card typography and spacing */
+  .intro { margin-top: 16px; }
+  .intro-copy > p:not(.intro-kicker) { font-size: 14px; }
+  .how-steps { grid-template-columns: 1fr; gap: 10px; }
+  .how-steps li { min-height: 0; padding: 14px 14px 14px 52px; }
+  .how-steps li:last-child { grid-column: span 1; }
+  .card-head { margin-bottom: 18px; padding-bottom: 14px; }
+  .card-head p, .journey-head p { font-size: 13px; }
+
+  /* form */
+  .farm-form > fieldset { padding: 15px 13px; border-radius: 14px; }
+  .field-row, .field-row.three { grid-template-columns: 1fr; gap: 12px; }
+  .field { margin-bottom: 14px; }
+  input, select, textarea { font-size: 16px; padding: 12px; min-height: 46px; }
+  .checklist { grid-template-columns: 1fr; }
+  .check { padding: 11px; }
+  .location-card { padding: 16px; }
+  .location-actions { gap: 8px; }
+  .location-actions .button { flex: 1 1 auto; min-height: 44px; }
+  .location-option { min-height: 46px; }
+  .location-options { max-height: 244px; }
+  .farm-form .actions { margin: 22px 0 0; padding: 16px; border-radius: 12px; }
+  .farm-form .actions .button { min-height: 48px; }
+  .priority input[type="range"] { min-height: 32px; }
+
+  /* results */
+  .results-heading { margin-left: auto; margin-right: auto; }
+  .meta-row { grid-template-columns: 1fr; }
+  .stat-grid { grid-template-columns: 1fr; }
+  .stat { min-height: 0; }
+  .evidence-overview { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .evidence-visual { min-height: 126px; padding: 12px; }
+  .evidence-visual strong { font-size: 20px; }
+  .scenario-list { grid-template-columns: 1fr; }
+  .scenario-head { flex-direction: column; align-items: flex-start; gap: 6px; }
+  .scenario-score { text-align: left; }
+  .ranking { flex-direction: column; }
+  .ranking li { padding: 11px; }
+  .explanation h4 { margin: 14px 0 4px; }
+  .technical-details summary { min-height: 36px; display: flex; align-items: center; }
+
+  /* history + overlays */
+  .history-entry { grid-template-columns: 1fr; gap: 10px; }
+  .history-entry .button, .history-entry .history-actions { width: 100%; }
+  .history-entry .history-actions { justify-content: space-between; }
+  .overlay { padding: 10px; align-items: end; }
+  .drawer { width: 100%; max-height: 88svh; padding: 18px; border-radius: 16px 16px 12px 12px; }
+  .drawer-head { gap: 10px; align-items: flex-start; }
+  .drawer-head h2 { font-size: 17px; }
+
+  /* footer + utilities */
+  .footer { padding: 22px 16px 26px; margin: 0 auto; }
+  .footer-credit { font-size: 12px; }
+  .scroll-top { width: 44px; height: 44px; right: 14px; bottom: 14px; font-size: 20px; }
+  .actions { flex-direction: column; align-items: stretch; }
+  .actions .button { width: 100%; min-height: 48px; }
+}
+
+/* --- Large phone / small phone refinements --- */
+@media (max-width: 430px) {
+  .evidence-overview { grid-template-columns: 1fr; }
+  .evidence-visual { min-height: 0; }
+  .topbar > .button.secondary { font-size: 11px; padding: 8px 9px; }
+  .brand { font-size: 17px; }
+  .masthead h1 { font-size: clamp(28px, 9.4vw, 36px); }
+  .hero-copy { padding: 94px 14px 34px; }
+  .page > .intro, .page > .card, .page > .results-heading, .page > .footer,
+  .page > .alert { width: calc(100% - 18px); }
+  .intro, .card { padding: 15px 13px; }
+}
+
+@media (max-width: 360px) {
+  .brand { font-size: 15px; }
+  .topbar > .button.secondary { font-size: 10px; padding: 7px 8px; }
+  .nav-toggle { width: 40px; height: 40px; }
+  .masthead h1 { font-size: 27px; }
+  .lede { font-size: 14px; }
+}
+
+/* Wide evidence tables scroll inside their own container, never the page. */
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+.table-wrap::-webkit-scrollbar { height: 8px; }
+.table-wrap::-webkit-scrollbar-thumb { border-radius: 8px; background: #b9d6c1; }
+.table-wrap table { min-width: 560px; }
